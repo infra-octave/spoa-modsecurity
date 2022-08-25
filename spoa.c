@@ -1281,7 +1281,7 @@ process_frame_cb(evutil_socket_t fd, short events, void *arg)
 
 			memset(&params, 0, sizeof(params));
 
-			if (nbargs != 8)
+			if (nbargs != 8 && nbargs != 11)
 				goto skip_message;
 
 			/* Decode parameter name. */
@@ -1348,6 +1348,32 @@ process_frame_cb(evutil_socket_t fd, short events, void *arg)
 			if (spoe_decode_data(&p, end, &params.body) == -1)
 				goto skip_message;
 
+			// Decode the args ip/port source/destination if passed
+			if (nbargs == 11) {
+				/* Decode parameter name. */
+				if (spoe_decode_buffer(&p, end, &str, &sz) == -1)
+					goto stop_processing;
+
+				/* Decode ip source. */
+				if (spoe_decode_data(&p, end, &params.src) == -1)
+					goto skip_message;
+
+				/* Decode parameter name. */
+				if (spoe_decode_buffer(&p, end, &str, &sz) == -1)
+					goto stop_processing;
+
+				/* Decode port source. */
+				if (spoe_decode_data(&p, end, &params.src_port) == -1)
+					goto skip_message;
+
+				/* Decode parameter name. */
+				if (spoe_decode_buffer(&p, end, &str, &sz) == -1)
+					goto stop_processing;
+
+				/* Decode port destination. */
+				if (spoe_decode_data(&p, end, &params.dst_port) == -1)
+					goto skip_message;
+			}
 			frame->modsec_code = modsecurity_process(frame->worker, &params);
 		}
 		else {

@@ -189,19 +189,34 @@ int modsecurity_process(struct worker *worker, struct modsecurity_parameters *pa
 	int ret;
 	char *buf;
 	char *end;
+	// var for decode args spop
+	// uniqueid
 	const char *uniqueid;
 	uint64_t uniqueid_len;
+	// method
 	const char *meth;
 	uint64_t meth_len;
+	// path
 	const char *path;
 	uint64_t path_len;
+	// query
 	const char *qs;
 	uint64_t qs_len;
+	// version
 	const char *vers;
 	uint64_t vers_len;
+	// ip source
+	const char *src;
+	uint64_t src_len;
+	// port source
+	uint64_t src_port;
+	// port destination
+	uint64_t dst_port;
+	// body 
 	const char *body;
 	uint64_t body_len;
 	uint64_t body_exposed_len;
+	// headers
 	uint64_t hdr_nb;
 	struct modsec_hdr hdrs[255];
 	struct modsec_hdr hdr;
@@ -231,6 +246,16 @@ int modsecurity_process(struct worker *worker, struct modsecurity_parameters *pa
 	/* Decode header binary block. */
 	buf = params->hdrs_bin.data.u.str.area;
 	end = buf + params->hdrs_bin.data.u.str.data;
+
+	/* Decode ip source. */
+	src = inet_ntoa(params->src.data.u.ipv4);
+	src_len = strlen(src);
+
+	/* Decode port source. */
+	src_port = (uint64_t)params->src_port.data.u.sint;
+
+	/* Decode port source. */
+	dst_port = (uint64_t)params->dst_port.data.u.sint;
 
 	/* Decode each header. */
 	hdr_nb = 0;
@@ -288,6 +313,17 @@ int modsecurity_process(struct worker *worker, struct modsecurity_parameters *pa
 	/* Init processing */
 
 	cr = modsecNewConnection();
+
+	// Define the ip source	
+	cr->client_ip = (strcmp(src, "")) ? src : "0.0.0.0";
+
+	// Define the port source
+	if (src_port)
+		cr->client_addr->port = src_port;
+	// Define the port destination
+	if (dst_port)
+		cr->local_addr->port = dst_port;
+		
 	req = modsecNewRequest(cr, modsec_config);
 
 	/* Load request. */

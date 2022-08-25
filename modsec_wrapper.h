@@ -26,6 +26,9 @@ struct modsecurity_parameters {
 	struct sample hdrs_bin;
 	struct sample body_length;
 	struct sample body;
+	struct sample src;
+	struct sample src_port;
+	struct sample dst_port;
 };
 
 int modsecurity_load(const char *file);
